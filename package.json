@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pub-win": "npm run build && git checkout website && del /Q assets\\* index.html vite.svg && xcopy /E /Y .\\dist\\* .\\ && rmdir /S /Q dist && git add . && git commit -m \"update website\" && git push origin website",
+    "pub-linx": "npm run build && git checkout website && rm -rf assets/* index.html vite.svg && cp -r dist/* . && rm -rf dist && git add . && git commit -m \"update website\" && git push origin website"
   },
   "dependencies": {
     "@danmarshall/deckgl-typings": "^4.9.28",
