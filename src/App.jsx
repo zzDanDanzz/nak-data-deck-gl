@@ -1,6 +1,6 @@
 import DeckGL from "@deck.gl/react";
 import { scaleLinear } from "d3-scale";
-import { MVTLayer } from "deck.gl";
+import { MVTLayer, GeoJsonLayer, PathLayer } from "deck.gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Map } from "react-map-gl";
 import { useImmer } from "use-immer";
@@ -66,54 +66,65 @@ function App() {
     derivedTileUrl.length > 0
       ? new MVTLayer({
           data: derivedTileUrl,
-          pointRadiusUnits: "pixels",
-          stroked: false,
-          getPointRadius: 5,
-          pickable: true,
 
-          getFillColor: (d) => {
-            const { propertyName, beginColor, beginRange, endColor, endRange } =
-              fillColorOptions;
+          renderSubLayers: (props) => {
+            const {
+              bbox: { west, south, east, north },
+            } = props.tile;
+            return [
+              new GeoJsonLayer({
+                ...props,
+                pointRadiusUnits: "pixels",
+                stroked: false,
+                getPointRadius: 5,
+                pickable: true,
+                tileSize: 256,
 
-            const prop = d.properties?.[propertyName];
+                getFillColor: (d) => {
+                  const {
+                    propertyName,
+                    beginColor,
+                    beginRange,
+                    endColor,
+                    endRange,
+                  } = fillColorOptions;
 
-            if (prop) {
-              const getColor = scaleLinear(
-                [beginRange, endRange],
-                [beginColor, endColor]
-              );
+                  const prop = d.properties?.[propertyName];
 
-              const rgbStr = getColor(prop);
+                  if (prop) {
+                    const getColor = scaleLinear(
+                      [beginRange, endRange],
+                      [beginColor, endColor]
+                    );
 
-              return convertRGBStrToArr(rgbStr);
-            }
-            return [0, 0, 0];
+                    const rgbStr = getColor(prop);
+
+                    return convertRGBStrToArr(rgbStr);
+                  }
+                  return [0, 0, 0];
+                },
+                updateTriggers: {
+                  getFillColor: fillColorOptions,
+                  data: derivedTileUrl,
+                },
+              }),
+              new PathLayer({
+                id: `${props.id}-border`,
+                data: [
+                  [
+                    [west, north],
+                    [west, south],
+                    [east, south],
+                    [east, north],
+                    [west, north],
+                  ],
+                ],
+                getPath: (d) => d,
+                getColor: [255, 0, 0],
+                widthMinPixels: 4,
+              }),
+            ];
           },
-          updateTriggers: {
-            getFillColor: fillColorOptions,
-            data: derivedTileUrl,
-          },
-
-          // renderSubLayers: (props) => {
-          //   const {
-          //     bbox: { west, south, east, north },
-          //   } = props.tile;
-          //   return new GeoJsonLayer({
-          //     id: `${props.id}-border`,
-          //     data: [
-          //       [
-          //         [west, north],
-          //         [west, south],
-          //         [east, south],
-          //         [east, north],
-          //         [west, north],
-          //       ],
-          //     ],
-          //     getPath: (d) => d,
-          //     getColor: [255, 0, 0],
-          //     widthMinPixels: 4,
-          //   });
-          // },
         })
       : null,
   ];
